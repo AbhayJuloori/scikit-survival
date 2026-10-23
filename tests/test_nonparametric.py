@@ -2846,6 +2846,28 @@ class TestKaplanMeier:
         assert_array_almost_equal(ci, km_ci)
 
     @staticmethod
+    def test_estimator_predict_confidence_interval_after_last_time():
+        y = Surv.from_arrays(event=[True, False, True, True], time=[1, 2, 3, 4])
+        est = SurvivalFunctionEstimator(conf_type="log-log").fit(y)
+
+        prob, ci = est.predict_proba([2.5, 10.0], return_conf_int=True)
+
+        assert_array_almost_equal(prob, [0.75, 0.0])
+        assert ci.shape == (2, 2)
+        assert_array_almost_equal(ci[:, 0], [0.12794692, 0.96054864])
+        assert np.isnan(ci[:, 1]).all()
+
+    @staticmethod
+    def test_estimator_predict_confidence_interval_before_last_time():
+        y = Surv.from_arrays(event=[True, False, True, True], time=[1, 2, 3, 4])
+        est = SurvivalFunctionEstimator(conf_type="log-log").fit(y)
+
+        prob, ci = est.predict_proba([2.5, 3.5], return_conf_int=True)
+
+        assert_array_almost_equal(prob, [0.75, 0.375])
+        assert_array_almost_equal(ci, [[0.12794692, 0.01097112], [0.96054864, 0.80800107]])
+
+    @staticmethod
     @pytest.mark.parametrize("time,event,true_x,true_y,km_var", SimpleDataKMCases().get_cases())
     def test_wrong_dtype(time, event, true_x, true_y, km_var):  # noqa: F821 undefined name
         ys = Surv.from_arrays(event, time)
